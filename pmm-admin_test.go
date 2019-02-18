@@ -2492,6 +2492,7 @@ func createFakeENV(t *testing.T, data pmmAdminData) {
 	files := []string{
 		filepath.Join(data.rootDir, pmm.PMMBaseDir, "node_exporter"),
 		filepath.Join(data.rootDir, pmm.PMMBaseDir, "mysqld_exporter"),
+		filepath.Join(data.rootDir, pmm.PMMBaseDir, "orchestrator_exporter"),
 		filepath.Join(data.rootDir, pmm.PMMBaseDir, "postgres_exporter"),
 		filepath.Join(data.rootDir, pmm.PMMBaseDir, "proxysql_exporter"),
 		filepath.Join(data.rootDir, pmm.AgentBaseDir, "bin", "percona-qan-agent"),

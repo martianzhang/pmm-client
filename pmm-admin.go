@@ -35,6 +35,8 @@ import (
 	"github.com/percona/pmm-client/pmm/plugin/mysql"
 	mysqlMetrics "github.com/percona/pmm-client/pmm/plugin/mysql/metrics"
 	mysqlQueries "github.com/percona/pmm-client/pmm/plugin/mysql/queries"
+	"github.com/percona/pmm-client/pmm/plugin/orchestrator"
+	orchestratorMetrics "github.com/percona/pmm-client/pmm/plugin/orchestrator/metrics"
 	"github.com/percona/pmm-client/pmm/plugin/postgresql"
 	postgresqlMetrics "github.com/percona/pmm-client/pmm/plugin/postgresql/metrics"
 	proxysqlMetrics "github.com/percona/pmm-client/pmm/plugin/proxysql/metrics"
@@ -423,6 +425,73 @@ Type pmm-admin add mysql:queries --help to see all acceptable flags.
 		},
 	}
 
+	cmdAddOrchestrator = &cobra.Command{
+		Use:   "orchestrator [flags] [name]",
+		Short: "Add complete monitoring for Orchestrator instance (linux and orchestrator metrics).",
+		Long: `This command adds the given Orchestrator instance to system and metrics monitoring.
+
+When adding a Orchestrator instance, this tool tries to auto-detect the DSN and credentials.
+If you want to create a new user to be used for metrics collecting, provide --create-user option. pmm-admin will create
+a new user 'pmm' automatically using the given (auto-detected) Orchestrator credentials for granting purpose.
+
+[name] is an optional argument, by default it is set to the client name of this PMM client.
+		`,
+		Example: `  pmm-admin add orchestrator 
+  pmm-admin add orchestrator --user abc123 --password abc123 --api http://localhost:3000/api/
+  pmm-admin add orchestrator --user abc123 --password abc123 instance3000`,
+		Run: func(cmd *cobra.Command, args []string) {
+			// Passing additional arguments doesn't make sense because this command enables multiple exporters.
+			if len(admin.Args) > 0 {
+				fmt.Printf("We can't determine which exporter should receive additional flags: %s.\n", strings.Join(admin.Args, ", "))
+				fmt.Println("To pass additional arguments to specific exporter you need to add it separately e.g.:")
+				fmt.Println("pmm-admin add linux:metrics -- ", strings.Join(admin.Args, " "))
+				fmt.Println("or")
+				fmt.Println("pmm-admin add orchestrator:metrics -- ", strings.Join(admin.Args, " "))
+				os.Exit(1)
+			}
+
+			linuxMetrics := linuxMetrics.New()
+			_, err := admin.AddMetrics(ctx, linuxMetrics, flagForce, flagDisableSSL)
+			if err == pmm.ErrDuplicate {
+				fmt.Println("[linux:metrics] OK, already monitoring this system.")
+			} else if err != nil {
+				fmt.Println("[linux:metrics] Error adding linux metrics:", err)
+				os.Exit(1)
+			} else {
+				fmt.Println("[linux:metrics] OK, now monitoring this system.")
+			}
+
+			orchestratorMetrics := orchestratorMetrics.New(flagOrchestrator)
+			info, err := admin.AddMetrics(ctx, orchestratorMetrics, false, flagDisableSSL)
+			if err == pmm.ErrDuplicate {
+				fmt.Println("[orchestrator:metrics] OK, already monitoring Orchestrator metrics.")
+			} else if err != nil {
+				fmt.Println("[orchestrator:metrics] Error adding Orchestrator metrics:", err)
+				os.Exit(1)
+			} else {
+				fmt.Println("[orchestrator:metrics] OK, now monitoring Orchestrator metrics using DSN", utils.SanitizeDSN(info.DSN))
+			}
+		},
+	}
+	cmdAddOrchestratorMetrics = &cobra.Command{
+		Use:   "orchestrator:metrics [flags] [name] [-- [exporter_args]]",
+		Short: "Add Orchestrator instance to metrics monitoring.",
+		Long: `This command adds the given Orchestrator instance to metrics monitoring.
+
+[name] is an optional argument, by default it is set to the client name of this PMM client.
+[exporter_args] are the command line options to be passed directly to Prometheus Exporter.
+		`,
+		Run: func(cmd *cobra.Command, args []string) {
+			orchestratorMetrics := orchestratorMetrics.New(flagOrchestrator)
+			info, err := admin.AddMetrics(ctx, orchestratorMetrics, false, flagDisableSSL)
+			if err != nil {
+				fmt.Println("Error adding orchestrator metrics:", err)
+				os.Exit(1)
+			}
+			fmt.Println("OK, now monitoring Orchestrator metrics using DSN", utils.SanitizeDSN(info.DSN))
+		},
+	}
+
 	cmdAddPostgreSQL = &cobra.Command{
 		Use:   "postgresql [flags] [name]",
 		Short: "Add complete monitoring for PostgreSQL instance (linux and postgresql metrics).",
@@ -613,6 +682,7 @@ Type pmm-admin add mongodb:queries --help to see all acceptable flags.
 			fmt.Println("For more information read PMM documentation (https://www.percona.com/doc/percona-monitoring-and-management/conf-mongodb.html).")
 		},
 	}
+
 	cmdAddProxySQL = &cobra.Command{
 		Use:   "proxysql [flags] [name]",
 		Short: "Add complete monitoring for ProxySQL instance (linux and proxysql metrics).",
@@ -672,6 +742,7 @@ When adding a ProxySQL instance, you may provide --dsn if the default one does n
 			fmt.Println("OK, now monitoring ProxySQL metrics using DSN", utils.SanitizeDSN(info.DSN))
 		},
 	}
+
 	cmdAddExternalService = &cobra.Command{
 		Use:   "external:service job_name [instance] --service-port=port",
 		Short: "Add external Prometheus exporter running on this host to new or existing scrape job for metrics monitoring.",
@@ -1432,6 +1503,7 @@ despite PMM server is alive or not.
 	flagExtPath, flagExtScheme      string
 
 	flagMySQL        mysql.Flags
+	flagOrchestrator orchestrator.Flags
 	flagPostgreSQL   postgresql.Flags
 	flagQueries      plugin.QueriesFlags
 	flagMySQLMetrics mysqlMetrics.Flags

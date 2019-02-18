@@ -777,6 +777,7 @@ func CheckBinaries() string {
 	paths := []string{
 		fmt.Sprintf("%s/node_exporter", PMMBaseDir),
 		fmt.Sprintf("%s/mysqld_exporter", PMMBaseDir),
+		fmt.Sprintf("%s/orchestrator_exporter", PMMBaseDir),
 		fmt.Sprintf("%s/mongodb_exporter", PMMBaseDir),
 		fmt.Sprintf("%s/proxysql_exporter", PMMBaseDir),
 		fmt.Sprintf("%s/postgres_exporter", PMMBaseDir),

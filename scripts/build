@@ -70,6 +70,11 @@ cd $GOPATH/src/github.com/percona/proxysql_exporter
 make
 mv ./proxysql_exporter $SOURCE_DIR/distro/bin/proxysql_exporter
 
+printf "Building orchestrator_exporter...\t"
+cd $GOPATH/src/github.com/martianzhang/orchestrator_exporter
+make
+mv ./orchestrator_exporter $SOURCE_DIR/distro/bin/orchestrator_exporter
+
 # Prepare tarball dir.
 cd $SOURCE_DIR
 cp CHANGELOG.md VERSION LICENSE scripts/install scripts/uninstall $PKG_DIR
