@@ -998,6 +998,48 @@ An optional list of instances (scrape targets) can be provided.
 			fmt.Printf("OK, removed MySQL queries %s from monitoring.\n", admin.ServiceName)
 		},
 	}
+	cmdRemoveOrchestrator = &cobra.Command{
+		Use:   "orchestrator [flags] [name]",
+		Short: "Remove all monitoring for Orchestrator instance (linux and orchestrator metrics).",
+		Long: `This command removes all monitoring for Orchestrator instance (linux and mysql metrics).
+
+[name] is an optional argument, by default it is set to the client name of this PMM client.
+		`,
+		Run: func(cmd *cobra.Command, args []string) {
+			err := admin.RemoveMetrics("linux")
+			if err == pmm.ErrNoService {
+				fmt.Printf("[linux:metrics] OK, no system %s under monitoring.\n", admin.ServiceName)
+			} else if err != nil {
+				fmt.Printf("[linux:metrics] Error removing linux metrics %s: %s\n", admin.ServiceName, err)
+			} else {
+				fmt.Printf("[linux:metrics] OK, removed system %s from monitoring.\n", admin.ServiceName)
+			}
+
+			err = admin.RemoveMetrics("orchestrator")
+			if err == pmm.ErrNoService {
+				fmt.Printf("[orchestrator:metrics] OK, no Orchestrator metrics %s under monitoring.\n", admin.ServiceName)
+			} else if err != nil {
+				fmt.Printf("[orchestrator:metrics] Error removing Orchestrator metrics %s: %s\n", admin.ServiceName, err)
+			} else {
+				fmt.Printf("[orchestrator:metrics] OK, removed MySQL Orchestrator %s from monitoring.\n", admin.ServiceName)
+			}
+		},
+	}
+	cmdRemoveOrchestratorMetrics = &cobra.Command{
+		Use:   "orchestrator:metrics [flags] [name]",
+		Short: "Remove Orchestrator instance from metrics monitoring.",
+		Long: `This command removes Orchestrator instance from metrics monitoring.
+
+[name] is an optional argument, by default it is set to the client name of this PMM client.
+		`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := admin.RemoveMetrics("orchestrator"); err != nil {
+				fmt.Printf("Error removing Orchestrator metrics %s: %s\n", admin.ServiceName, err)
+				os.Exit(1)
+			}
+			fmt.Printf("OK, removed Orchestrator metrics %s from monitoring.\n", admin.ServiceName)
+		},
+	}
 	cmdRemoveMongoDB = &cobra.Command{
 		Use:   "mongodb [flags] [name]",
 		Short: "Remove all monitoring for MongoDB instance (linux and mongodb metrics).",
@@ -1538,6 +1580,8 @@ func main() {
 		cmdAddMySQL,
 		cmdAddMySQLMetrics,
 		cmdAddMySQLQueries,
+		cmdAddOrchestrator,
+		cmdAddOrchestratorMetrics,
 		cmdAddMongoDB,
 		cmdAddMongoDBMetrics,
 		cmdAddMongoDBQueries,
@@ -1554,6 +1598,8 @@ func main() {
 		cmdRemoveMySQL,
 		cmdRemoveMySQLMetrics,
 		cmdRemoveMySQLQueries,
+		cmdRemoveOrchestrator,
+		cmdRemoveOrchestratorMetrics,
 		cmdRemoveMongoDB,
 		cmdRemoveMongoDBMetrics,
 		cmdRemoveMongoDBQueries,
