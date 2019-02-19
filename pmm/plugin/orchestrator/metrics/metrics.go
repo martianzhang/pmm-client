@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/percona/pmm-client/pmm/plugin"
@@ -17,7 +18,7 @@ var _ plugin.Metrics = (*Metrics)(nil)
 func New(flags orchestrator.Flags) *Metrics {
 	return &Metrics{
 		api:      flags.Api,
-		user:     flags.Password,
+		user:     flags.User,
 		password: flags.Password,
 	}
 }
@@ -32,7 +33,7 @@ type Metrics struct {
 // Init initializes plugin.
 func (m *Metrics) Init(ctx context.Context, pmmUserPassword string) (*plugin.Info, error) {
 	if err := testConnection(m.user, m.password, m.api); err != nil {
-		return nil, fmt.Errorf("cannot connect to Orchestrator using API %s: %s", m.api, err)
+		return nil, fmt.Errorf("cannot connect to Orchestrator using API %s (%s:%s): %s", m.api, m.user, m.password, err)
 	}
 
 	info := &plugin.Info{
@@ -59,7 +60,7 @@ func (Metrics) Args() []string {
 // Environment is a list of additional environment variables passed to exporter executable.
 func (m Metrics) Environment() []string {
 	return []string{
-		fmt.Sprintf("ORCHESTRATOR_AUTH_SERVER=%s", m.user),
+		fmt.Sprintf("ORCHESTRATOR_AUTH_SERVER=%s", m.api),
 		fmt.Sprintf("ORCHESTRATOR_AUTH_USER=%s", m.user),
 		fmt.Sprintf("ORCHESTRATOR_AUTH_PASSWORD=%s", m.password),
 	}
@@ -97,7 +98,15 @@ func testConnection(user, password, api string) error {
 	client := http.Client{
 		Timeout: 3 * time.Second,
 	}
-	req, err := http.NewRequest("GET", api, nil)
+
+	var url string
+	if strings.HasSuffix(api, "/") {
+		url = api + "health"
+	} else {
+		url = api + "/health"
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return err
 	}

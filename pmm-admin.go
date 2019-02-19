@@ -1675,6 +1675,15 @@ func main() {
 	addCommonMySQLFlags(cmdAddMySQLQueries)
 	addCommonMySQLQueriesFlags(cmdAddMySQLQueries)
 
+	// pmm-admin add orchestrator
+	cmdAddOrchestrator.Flags().StringVar(&flagOrchestrator.Api, "api", "http://localhost:3000/api/", "Orchestrator server api")
+	cmdAddOrchestrator.Flags().StringVar(&flagOrchestrator.User, "user", "", "Orchestrator auth user")
+	cmdAddOrchestrator.Flags().StringVar(&flagOrchestrator.Password, "password", "", "Orchestrator auth password")
+	// pmm-admin add orchestrator:metrics
+	cmdAddOrchestratorMetrics.Flags().StringVar(&flagOrchestrator.Api, "api", "http://localhost:3000/api/", "Orchestrator server api")
+	cmdAddOrchestratorMetrics.Flags().StringVar(&flagOrchestrator.User, "user", "", "Orchestrator auth user")
+	cmdAddOrchestratorMetrics.Flags().StringVar(&flagOrchestrator.Password, "password", "", "Orchestrator auth password")
+
 	// Common PostgreSQL flags.
 	addCommonPostgreSQLFlags := func(cmd *cobra.Command) {
 		cmd.Flags().StringVar(&flagPostgreSQL.Host, "host", "", "PostgreSQL host")

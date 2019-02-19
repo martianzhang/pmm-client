@@ -41,7 +41,7 @@ import (
 	"github.com/docker/cli/templates"
 	"github.com/fatih/color"
 	consul "github.com/hashicorp/consul/api"
-	"github.com/percona/kardianos-service"
+	service "github.com/percona/kardianos-service"
 	"github.com/percona/pmm/version"
 	"github.com/prometheus/client_golang/api/prometheus"
 
@@ -379,6 +379,10 @@ func (a *Admin) RemoveAllMonitoring(ignoreErrors bool) (uint16, error) {
 				if err := a.RemoveMetrics("mysql"); err != nil && !ignoreErrors {
 					return count, err
 				}
+			case "orchestrator:metrics":
+				if err := a.RemoveMetrics("orchestrator"); err != nil && !ignoreErrors {
+					return count, err
+				}
 			case "mysql:queries":
 				if err := a.RemoveQueries("mysql"); err != nil && !ignoreErrors {
 					return count, err
@@ -413,10 +417,10 @@ func (a *Admin) RemoveAllMonitoring(ignoreErrors bool) (uint16, error) {
 
 // PurgeMetrics purge metrics data on the server by its metric type and name.
 func (a *Admin) PurgeMetrics(svcType string) error {
-	if svcType != "linux:metrics" && svcType != "mysql:metrics" && svcType != "mongodb:metrics" && svcType != "proxysql:metrics" && svcType != "postgresql:metrics" {
+	if svcType != "linux:metrics" && svcType != "mysql:metrics" && svcType != "orchestrator:metrics" && svcType != "mongodb:metrics" && svcType != "proxysql:metrics" && svcType != "postgresql:metrics" {
 		return errors.New(`bad service type.
 
-Service type takes the following values: linux:metrics, mysql:metrics, mongodb:metrics, proxysql:metrics, postgresql:metrics.`)
+Service type takes the following values: linux:metrics, mysql:metrics, orchestrator:metrics, mongodb:metrics, proxysql:metrics, postgresql:metrics.`)
 	}
 
 	var promError error
@@ -857,6 +861,7 @@ var svcTypes = []string{
 	"linux:metrics",
 	"mysql:metrics",
 	"mysql:queries",
+	"orchestrator:metrics",
 	"mongodb:metrics",
 	"mongodb:queries",
 	"proxysql:metrics",
