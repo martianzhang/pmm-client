@@ -9,7 +9,7 @@ type Metrics interface {
 	// Init initializes plugin and returns Info about database.
 	Init(ctx context.Context, pmmUserPassword string) (*Info, error)
 	// Name of the exporter.
-	// As the time of writing this is limited to linux, mysql, mongodb, proxysql and postgresql.
+	// As the time of writing this is limited to linux, mysql, orchestrator, mongodb, proxysql and postgresql.
 	Name() string
 	// Args is a list of additional arguments passed to exporter executable.
 	Args() []string

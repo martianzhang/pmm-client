@@ -1021,7 +1021,7 @@ An optional list of instances (scrape targets) can be provided.
 			} else if err != nil {
 				fmt.Printf("[orchestrator:metrics] Error removing Orchestrator metrics %s: %s\n", admin.ServiceName, err)
 			} else {
-				fmt.Printf("[orchestrator:metrics] OK, removed MySQL Orchestrator %s from monitoring.\n", admin.ServiceName)
+				fmt.Printf("[orchestrator:metrics] OK, removed Orchestrator %s from monitoring.\n", admin.ServiceName)
 			}
 		},
 	}
