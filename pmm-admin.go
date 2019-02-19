@@ -40,6 +40,8 @@ import (
 	"github.com/percona/pmm-client/pmm/plugin/postgresql"
 	postgresqlMetrics "github.com/percona/pmm-client/pmm/plugin/postgresql/metrics"
 	proxysqlMetrics "github.com/percona/pmm-client/pmm/plugin/proxysql/metrics"
+	"github.com/percona/pmm-client/pmm/plugin/redis"
+	redisMetrics "github.com/percona/pmm-client/pmm/plugin/redis/metrics"
 	"github.com/percona/pmm-client/pmm/utils"
 	"github.com/spf13/cobra"
 )
@@ -489,6 +491,73 @@ a new user 'pmm' automatically using the given (auto-detected) Orchestrator cred
 				os.Exit(1)
 			}
 			fmt.Println("OK, now monitoring Orchestrator metrics using DSN", utils.SanitizeDSN(info.DSN))
+		},
+	}
+
+	cmdAddRedis = &cobra.Command{
+		Use:   "redis [flags] [name]",
+		Short: "Add complete monitoring for Redis instance (linux and redis metrics).",
+		Long: `This command adds the given Redis instance to system and metrics monitoring.
+
+When adding a Redis instance, this tool tries to auto-detect the DSN and credentials.
+If you want to create a new user to be used for metrics collecting, provide --create-user option. pmm-admin will create
+a new user 'pmm' automatically using the given (auto-detected) Redis credentials for granting purpose.
+
+[name] is an optional argument, by default it is set to the client name of this PMM client.
+		`,
+		Example: `  pmm-admin add redis 
+  pmm-admin add redis --user abc123 --password abc123 --api http://localhost:3000/api/
+  pmm-admin add redis --user abc123 --password abc123 instance3000`,
+		Run: func(cmd *cobra.Command, args []string) {
+			// Passing additional arguments doesn't make sense because this command enables multiple exporters.
+			if len(admin.Args) > 0 {
+				fmt.Printf("We can't determine which exporter should receive additional flags: %s.\n", strings.Join(admin.Args, ", "))
+				fmt.Println("To pass additional arguments to specific exporter you need to add it separately e.g.:")
+				fmt.Println("pmm-admin add linux:metrics -- ", strings.Join(admin.Args, " "))
+				fmt.Println("or")
+				fmt.Println("pmm-admin add redis:metrics -- ", strings.Join(admin.Args, " "))
+				os.Exit(1)
+			}
+
+			linuxMetrics := linuxMetrics.New()
+			_, err := admin.AddMetrics(ctx, linuxMetrics, flagForce, flagDisableSSL)
+			if err == pmm.ErrDuplicate {
+				fmt.Println("[linux:metrics] OK, already monitoring this system.")
+			} else if err != nil {
+				fmt.Println("[linux:metrics] Error adding linux metrics:", err)
+				os.Exit(1)
+			} else {
+				fmt.Println("[linux:metrics] OK, now monitoring this system.")
+			}
+
+			redisMetrics := redisMetrics.New(flagRedis)
+			info, err := admin.AddMetrics(ctx, redisMetrics, false, flagDisableSSL)
+			if err == pmm.ErrDuplicate {
+				fmt.Println("[redis:metrics] OK, already monitoring Redis metrics.")
+			} else if err != nil {
+				fmt.Println("[redis:metrics] Error adding Redis metrics:", err)
+				os.Exit(1)
+			} else {
+				fmt.Println("[redis:metrics] OK, now monitoring Redis metrics using DSN", utils.SanitizeDSN(info.DSN))
+			}
+		},
+	}
+	cmdAddRedisMetrics = &cobra.Command{
+		Use:   "redis:metrics [flags] [name] [-- [exporter_args]]",
+		Short: "Add Redis instance to metrics monitoring.",
+		Long: `This command adds the given Redis instance to metrics monitoring.
+
+[name] is an optional argument, by default it is set to the client name of this PMM client.
+[exporter_args] are the command line options to be passed directly to Prometheus Exporter.
+		`,
+		Run: func(cmd *cobra.Command, args []string) {
+			redisMetrics := redisMetrics.New(flagRedis)
+			info, err := admin.AddMetrics(ctx, redisMetrics, false, flagDisableSSL)
+			if err != nil {
+				fmt.Println("Error adding redis metrics:", err)
+				os.Exit(1)
+			}
+			fmt.Println("OK, now monitoring Redis metrics using DSN", utils.SanitizeDSN(info.DSN))
 		},
 	}
 
@@ -1040,6 +1109,48 @@ An optional list of instances (scrape targets) can be provided.
 			fmt.Printf("OK, removed Orchestrator metrics %s from monitoring.\n", admin.ServiceName)
 		},
 	}
+	cmdRemoveRedis = &cobra.Command{
+		Use:   "redis [flags] [name]",
+		Short: "Remove all monitoring for Redis instance (linux and redis metrics).",
+		Long: `This command removes all monitoring for Redis instance (linux and mysql metrics).
+
+[name] is an optional argument, by default it is set to the client name of this PMM client.
+		`,
+		Run: func(cmd *cobra.Command, args []string) {
+			err := admin.RemoveMetrics("linux")
+			if err == pmm.ErrNoService {
+				fmt.Printf("[linux:metrics] OK, no system %s under monitoring.\n", admin.ServiceName)
+			} else if err != nil {
+				fmt.Printf("[linux:metrics] Error removing linux metrics %s: %s\n", admin.ServiceName, err)
+			} else {
+				fmt.Printf("[linux:metrics] OK, removed system %s from monitoring.\n", admin.ServiceName)
+			}
+
+			err = admin.RemoveMetrics("redis")
+			if err == pmm.ErrNoService {
+				fmt.Printf("[redis:metrics] OK, no Redis metrics %s under monitoring.\n", admin.ServiceName)
+			} else if err != nil {
+				fmt.Printf("[redis:metrics] Error removing Redis metrics %s: %s\n", admin.ServiceName, err)
+			} else {
+				fmt.Printf("[redis:metrics] OK, removed Redis %s from monitoring.\n", admin.ServiceName)
+			}
+		},
+	}
+	cmdRemoveRedisMetrics = &cobra.Command{
+		Use:   "redis:metrics [flags] [name]",
+		Short: "Remove Redis instance from metrics monitoring.",
+		Long: `This command removes Redis instance from metrics monitoring.
+
+[name] is an optional argument, by default it is set to the client name of this PMM client.
+		`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := admin.RemoveMetrics("redis"); err != nil {
+				fmt.Printf("Error removing Redis metrics %s: %s\n", admin.ServiceName, err)
+				os.Exit(1)
+			}
+			fmt.Printf("OK, removed Redis metrics %s from monitoring.\n", admin.ServiceName)
+		},
+	}
 	cmdRemoveMongoDB = &cobra.Command{
 		Use:   "mongodb [flags] [name]",
 		Short: "Remove all monitoring for MongoDB instance (linux and mongodb metrics).",
@@ -1546,6 +1657,7 @@ despite PMM server is alive or not.
 
 	flagMySQL        mysql.Flags
 	flagOrchestrator orchestrator.Flags
+	flagRedis        redis.Flags
 	flagPostgreSQL   postgresql.Flags
 	flagQueries      plugin.QueriesFlags
 	flagMySQLMetrics mysqlMetrics.Flags
@@ -1582,6 +1694,8 @@ func main() {
 		cmdAddMySQLQueries,
 		cmdAddOrchestrator,
 		cmdAddOrchestratorMetrics,
+		cmdAddRedis,
+		cmdAddRedisMetrics,
 		cmdAddMongoDB,
 		cmdAddMongoDBMetrics,
 		cmdAddMongoDBQueries,
@@ -1600,6 +1714,8 @@ func main() {
 		cmdRemoveMySQLQueries,
 		cmdRemoveOrchestrator,
 		cmdRemoveOrchestratorMetrics,
+		cmdRemoveRedis,
+		cmdRemoveRedisMetrics,
 		cmdRemoveMongoDB,
 		cmdRemoveMongoDBMetrics,
 		cmdRemoveMongoDBQueries,
@@ -1683,6 +1799,11 @@ func main() {
 	cmdAddOrchestratorMetrics.Flags().StringVar(&flagOrchestrator.Api, "api", "http://localhost:3000/api/", "Orchestrator server api")
 	cmdAddOrchestratorMetrics.Flags().StringVar(&flagOrchestrator.User, "user", "", "Orchestrator auth user")
 	cmdAddOrchestratorMetrics.Flags().StringVar(&flagOrchestrator.Password, "password", "", "Orchestrator auth password")
+
+	// pmm-admin add redis
+	cmdAddRedis.Flags().StringVar(&flagRedis.Url, "url", "redis://", "Redis server url")
+	// pmm-admin add redis:metrics
+	cmdAddRedisMetrics.Flags().StringVar(&flagRedis.Url, "url", "redis://", "Redis server url")
 
 	// Common PostgreSQL flags.
 	addCommonPostgreSQLFlags := func(cmd *cobra.Command) {

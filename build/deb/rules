@@ -45,6 +45,7 @@ override_dh_auto_install:
 	cp -f distro/node_exporter $(TMP)/node_exporter
 	cp -f distro/mysqld_exporter $(TMP)/mysqld_exporter
 	cp -f distro/orchestrator_exporter $(TMP)/orchestrator_exporter
+	cp -f distro/redis_exporter $(TMP)/redis_exporter
 	cp -f distro/postgres_exporter $(TMP)/postgres_exporter
 	cp -f distro/mongodb_exporter $(TMP)/mongodb_exporter
 	cp -f distro/proxysql_exporter $(TMP)/proxysql_exporter

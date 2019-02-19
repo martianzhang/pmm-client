@@ -37,7 +37,7 @@ import (
 	"github.com/percona/pmm/proto"
 	pc "github.com/percona/pmm/proto/config"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 type pmmAdminData struct {
@@ -2493,6 +2493,7 @@ func createFakeENV(t *testing.T, data pmmAdminData) {
 		filepath.Join(data.rootDir, pmm.PMMBaseDir, "node_exporter"),
 		filepath.Join(data.rootDir, pmm.PMMBaseDir, "mysqld_exporter"),
 		filepath.Join(data.rootDir, pmm.PMMBaseDir, "orchestrator_exporter"),
+		filepath.Join(data.rootDir, pmm.PMMBaseDir, "redis_exporter"),
 		filepath.Join(data.rootDir, pmm.PMMBaseDir, "postgres_exporter"),
 		filepath.Join(data.rootDir, pmm.PMMBaseDir, "proxysql_exporter"),
 		filepath.Join(data.rootDir, pmm.AgentBaseDir, "bin", "percona-qan-agent"),
