@@ -49,7 +49,7 @@ func (Metrics) Name() string {
 
 // DefaultPort returns default port.
 func (Metrics) DefaultPort() int {
-	return 30000
+	return 42010
 }
 
 // Args is a list of additional arguments passed to exporter executable.
