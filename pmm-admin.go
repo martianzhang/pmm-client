@@ -506,8 +506,8 @@ a new user 'pmm' automatically using the given (auto-detected) Redis credentials
 [name] is an optional argument, by default it is set to the client name of this PMM client.
 		`,
 		Example: `  pmm-admin add redis 
-  pmm-admin add redis --user abc123 --password abc123 --api http://localhost:3000/api/
-  pmm-admin add redis --user abc123 --password abc123 instance3000`,
+  pmm-admin add redis --redis.addr redis://127.0.0.1:6379 --redis.password 123456
+  pmm-admin add redis --redis.file /path/to/redis_6379.conf`,
 		Run: func(cmd *cobra.Command, args []string) {
 			// Passing additional arguments doesn't make sense because this command enables multiple exporters.
 			if len(admin.Args) > 0 {
@@ -1801,9 +1801,31 @@ func main() {
 	cmdAddOrchestratorMetrics.Flags().StringVar(&flagOrchestrator.Password, "password", "", "Orchestrator auth password")
 
 	// pmm-admin add redis
-	cmdAddRedis.Flags().StringVar(&flagRedis.Url, "url", "redis://", "Redis server url")
+	cmdAddRedis.Flags().StringVar(&flagRedis.Addr, "redis.addr", "", "Address of one or more redis nodes, separated by separator")
+	cmdAddRedis.Flags().StringVar(&flagRedis.File, "redis.file", "", "Path to file containing one or more redis nodes, separated by newline. NOTE: mutually exclusive with redis.addr")
+	cmdAddRedis.Flags().StringVar(&flagRedis.Password, "redis.password", "", "Password for one or more redis nodes, separated by separator")
+	cmdAddRedis.Flags().StringVar(&flagRedis.PasswordFile, "redis.password-file", "", "File containing the password for one or more redis nodes, separated by separator. NOTE: mutually exclusive with redis.password")
+	cmdAddRedis.Flags().StringVar(&flagRedis.Alias, "redis.alias", "", "Redis instance alias for one or more redis nodes, separated by separator")
+	cmdAddRedis.Flags().StringVar(&flagRedis.ExporterNamespace, "redis.exporter.namespace", "redis", "Namespace for metrics")
+	cmdAddRedis.Flags().StringVar(&flagRedis.ExporterCheckKeys, "redis.exporter.check-keys", "", "Comma separated list of key-patterns to export value and length/size, searched for with SCAN")
+	cmdAddRedis.Flags().StringVar(&flagRedis.ExporterCheckSingleKeys, "redis.exporter.check-single-keys", "", "Comma separated list of single keys to export value and length/size")
+	cmdAddRedis.Flags().StringVar(&flagRedis.ExporterScript, "redis.exporter.script", "", "Path to Lua Redis script for collecting extra metrics")
+	cmdAddRedis.Flags().StringVar(&flagRedis.ExporterSeparator, "redis.exporter.separator", ",", "separator used to split redis.addr, redis.password and redis.alias into several elements.")
+	cmdAddRedis.Flags().StringVar(&flagRedis.ExporterDebug, "redis.exporter.debug", "", "Output verbose debug information")
+	cmdAddRedis.Flags().StringVar(&flagRedis.ExporterLogFormat, "redis.exporter.log-format", "txt", "Log format, valid options are txt and json")
 	// pmm-admin add redis:metrics
-	cmdAddRedisMetrics.Flags().StringVar(&flagRedis.Url, "url", "redis://", "Redis server url")
+	cmdAddRedisMetrics.Flags().StringVar(&flagRedis.Addr, "redis.addr", "", "Address of one or more redis nodes, separated by separator")
+	cmdAddRedisMetrics.Flags().StringVar(&flagRedis.File, "redis.file", "", "Path to file containing one or more redis nodes, separated by newline. NOTE: mutually exclusive with redis.addr")
+	cmdAddRedisMetrics.Flags().StringVar(&flagRedis.Password, "redis.password", "", "Password for one or more redis nodes, separated by separator")
+	cmdAddRedisMetrics.Flags().StringVar(&flagRedis.PasswordFile, "redis.password-file", "", "File containing the password for one or more redis nodes, separated by separator. NOTE: mutually exclusive with redis.password")
+	cmdAddRedisMetrics.Flags().StringVar(&flagRedis.Alias, "redis.alias", "", "Redis instance alias for one or more redis nodes, separated by separator")
+	cmdAddRedisMetrics.Flags().StringVar(&flagRedis.ExporterNamespace, "redis.exporter.namespace", "redis", "Namespace for metrics")
+	cmdAddRedisMetrics.Flags().StringVar(&flagRedis.ExporterCheckKeys, "redis.exporter.check-keys", "", "Comma separated list of key-patterns to export value and length/size, searched for with SCAN")
+	cmdAddRedisMetrics.Flags().StringVar(&flagRedis.ExporterCheckSingleKeys, "redis.exporter.check-single-keys", "", "Comma separated list of single keys to export value and length/size")
+	cmdAddRedisMetrics.Flags().StringVar(&flagRedis.ExporterScript, "redis.exporter.script", "", "Path to Lua Redis script for collecting extra metrics")
+	cmdAddRedisMetrics.Flags().StringVar(&flagRedis.ExporterSeparator, "redis.exporter.separator", ",", "separator used to split redis.addr, redis.password and redis.alias into several elements.")
+	cmdAddRedisMetrics.Flags().StringVar(&flagRedis.ExporterDebug, "redis.exporter.debug", "", "Output verbose debug information")
+	cmdAddRedisMetrics.Flags().StringVar(&flagRedis.ExporterLogFormat, "redis.exporter.log-format", "txt", "Log format, valid options are txt and json")
 
 	// Common PostgreSQL flags.
 	addCommonPostgreSQLFlags := func(cmd *cobra.Command) {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	redisgo "github.com/gomodule/redigo/redis"
 	"github.com/percona/pmm-client/pmm/plugin"
 	"github.com/percona/pmm-client/pmm/plugin/redis"
 )
@@ -14,23 +13,41 @@ var _ plugin.Metrics = (*Metrics)(nil)
 // New returns *Metrics.
 func New(flags redis.Flags) *Metrics {
 	return &Metrics{
-		url: flags.Url,
+		addr:                    flags.Addr,
+		file:                    flags.File,
+		password:                flags.Password,
+		passwordFile:            flags.PasswordFile,
+		alias:                   flags.Alias,
+		exporterNamespace:       flags.ExporterNamespace,
+		exporterCheckKeys:       flags.ExporterCheckKeys,
+		exporterCheckSingleKeys: flags.ExporterCheckSingleKeys,
+		exporterScript:          flags.ExporterScript,
+		exporterSeparator:       flags.ExporterSeparator,
+		exporterDebug:           flags.ExporterDebug,
+		exporterLogFormat:       flags.ExporterLogFormat,
 	}
 }
 
 // Metrics implements plugin.Metrics.
 type Metrics struct {
-	url string
+	addr                    string
+	file                    string
+	password                string
+	passwordFile            string
+	alias                   string
+	exporterNamespace       string
+	exporterCheckKeys       string
+	exporterCheckSingleKeys string
+	exporterScript          string
+	exporterSeparator       string
+	exporterDebug           string
+	exporterLogFormat       string
 }
 
 // Init initializes plugin.
 func (m *Metrics) Init(ctx context.Context, pmmUserPassword string) (*plugin.Info, error) {
-	if err := testConnection(m.url); err != nil {
-		return nil, fmt.Errorf("cannot connect to Redis using Address %s: %s", m.url, err)
-	}
-
 	info := &plugin.Info{
-		DSN: m.url,
+		DSN: m.addr,
 	}
 	return info, nil
 }
@@ -42,7 +59,7 @@ func (Metrics) Name() string {
 
 // DefaultPort returns default port.
 func (Metrics) DefaultPort() int {
-	return 30000
+	return 9121
 }
 
 // Args is a list of additional arguments passed to exporter executable.
@@ -53,7 +70,18 @@ func (Metrics) Args() []string {
 // Environment is a list of additional environment variables passed to exporter executable.
 func (m Metrics) Environment() []string {
 	return []string{
-		fmt.Sprintf("REDIS_URL=%s", m.url),
+		fmt.Sprintf("REDIS_ADDR=%s", m.addr),
+		fmt.Sprintf("REDIS_FILE=%s", m.file),
+		fmt.Sprintf("REDIS_PASSWORD=%s", m.password),
+		fmt.Sprintf("REDIS_PASSWORD_FILE=%s", m.passwordFile),
+		fmt.Sprintf("REDIS_ALIAS=%s", m.alias),
+		fmt.Sprintf("REDIS_EXPORTER_NAMESPACE=%s", m.exporterNamespace),
+		fmt.Sprintf("REDIS_EXPORTER_CHECK_KEYS=%s", m.exporterCheckKeys),
+		fmt.Sprintf("REDIS_EXPORTER_CHECK_SINGLE_KEYS=%s", m.exporterCheckSingleKeys),
+		fmt.Sprintf("REDIS_EXPORTER_SCRIPT=%s", m.exporterScript),
+		fmt.Sprintf("REDIS_EXPORTER_SEPARATOR=%s", m.exporterSeparator),
+		fmt.Sprintf("REDIS_EXPORTER_DEBUG=%s", m.exporterDebug),
+		fmt.Sprintf("REDIS_EXPORTER_LOG_FORMAT=%s", m.exporterLogFormat),
 	}
 }
 
@@ -65,7 +93,7 @@ func (Metrics) Executable() string {
 // KV is a list of additional Key-Value data stored in consul.
 func (m Metrics) KV() map[string][]byte {
 	return map[string][]byte{
-		"url": []byte(m.url),
+		"addr": []byte(m.addr),
 	}
 }
 
@@ -77,14 +105,4 @@ func (Metrics) Cluster() string {
 // Multiple returns true if exporter can be added multiple times.
 func (Metrics) Multiple() bool {
 	return true
-}
-
-func testConnection(url string) error {
-	c, err := redisgo.DialURL(url)
-	if err != nil {
-		return err
-	}
-	defer c.Close()
-	_, err = c.Do("PING")
-	return err
 }
