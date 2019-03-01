@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 
 	consul "github.com/hashicorp/consul/api"
-	"github.com/percona/kardianos-service"
+	service "github.com/percona/kardianos-service"
 	"github.com/percona/pmm-client/pmm/plugin"
 )
 
@@ -111,8 +111,13 @@ func (a *Admin) AddMetrics(ctx context.Context, m plugin.Metrics, force bool, di
 	}
 
 	args := []string{
-		fmt.Sprintf("-web.listen-address=%s:%d", a.Config.BindAddress, port),
-		fmt.Sprintf("-web.auth-file=%s", ConfigFile),
+		fmt.Sprintf("--web.listen-address=%s:%d", a.Config.BindAddress, port),
+	}
+
+	switch m.Executable() {
+	case "orchestrator_exporter", "redis_exporter", "blackbox_exporter":
+	default:
+		args = append(args, fmt.Sprintf("-web.auth-file=%s", ConfigFile))
 	}
 
 	if !disableSSL {
