@@ -76,9 +76,14 @@ make
 mv ./orchestrator_exporter $SOURCE_DIR/distro/bin/orchestrator_exporter
 
 printf "Building redis_exporter...\t"
-cd $GOPATH/src/github.com/martianzhang/redis_exporter
+cd $GOPATH/src/github.com/oliver006/redis_exporter
 make
 mv ./redis_exporter $SOURCE_DIR/distro/bin/redis_exporter
+
+printf "Building blackbox_exporter...\t"
+cd $GOPATH/src/github.com/prometheus/blackbox_exporter
+make
+mv ./redis_exporter $SOURCE_DIR/distro/bin/blackbox_exporter
 
 # Prepare tarball dir.
 cd $SOURCE_DIR

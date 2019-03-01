@@ -46,6 +46,7 @@ override_dh_auto_install:
 	cp -f distro/mysqld_exporter $(TMP)/mysqld_exporter
 	cp -f distro/orchestrator_exporter $(TMP)/orchestrator_exporter
 	cp -f distro/redis_exporter $(TMP)/redis_exporter
+	cp -f distro/blackbox_exporter $(TMP)/blackbox_exporter
 	cp -f distro/postgres_exporter $(TMP)/postgres_exporter
 	cp -f distro/mongodb_exporter $(TMP)/mongodb_exporter
 	cp -f distro/proxysql_exporter $(TMP)/proxysql_exporter
@@ -55,4 +56,5 @@ override_dh_auto_install:
 	cp -f distro/pt-mongodb-summary $(TMP)/pt-mongodb-summary
 	cp -f distro/percona-qan-agent-installer $(TMP)/percona-qan-agent-installer
 	install -m 0644 queries-mysqld.yml $(TMP)/queries-mysqld.yml
+	install -m 0644 blackbox.yml $(TMP)/blackbox.yml
 	install -m 0755 example.prom $(TMP)/example.prom

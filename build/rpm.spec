@@ -39,6 +39,7 @@ install -m 0755 bin/node_exporter $RPM_BUILD_ROOT/usr/local/percona/pmm-client/
 install -m 0755 bin/mysqld_exporter $RPM_BUILD_ROOT/usr/local/percona/pmm-client/
 install -m 0755 bin/orchestrator_exporter $RPM_BUILD_ROOT/usr/local/percona/pmm-client/
 install -m 0755 bin/redis_exporter $RPM_BUILD_ROOT/usr/local/percona/pmm-client/
+install -m 0755 bin/blackbox_exporter $RPM_BUILD_ROOT/usr/local/percona/pmm-client/
 install -m 0755 bin/postgres_exporter $RPM_BUILD_ROOT/usr/local/percona/pmm-client/
 install -m 0755 bin/mongodb_exporter $RPM_BUILD_ROOT/usr/local/percona/pmm-client/
 install -m 0755 bin/proxysql_exporter $RPM_BUILD_ROOT/usr/local/percona/pmm-client/
@@ -48,6 +49,7 @@ install -m 0755 bin/pt-mongodb-summary $RPM_BUILD_ROOT/usr/local/percona/qan-age
 install -m 0755 bin/percona-qan-agent $RPM_BUILD_ROOT/usr/local/percona/qan-agent/bin/
 install -m 0755 bin/percona-qan-agent-installer $RPM_BUILD_ROOT/usr/local/percona/qan-agent/bin/
 install -m 0644 queries-mysqld.yml $RPM_BUILD_ROOT/usr/local/percona/pmm-client
+install -m 0644 blackbox.yml $RPM_BUILD_ROOT/usr/local/percona/pmm-client/
 install -m 0755 example.prom $RPM_BUILD_ROOT/usr/local/percona/pmm-client/textfile-collector/
 
 %clean

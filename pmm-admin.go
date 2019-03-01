@@ -29,6 +29,8 @@ import (
 
 	"github.com/percona/pmm-client/pmm"
 	"github.com/percona/pmm-client/pmm/plugin"
+	"github.com/percona/pmm-client/pmm/plugin/blackbox"
+	blackboxMetrics "github.com/percona/pmm-client/pmm/plugin/blackbox/metrics"
 	linuxMetrics "github.com/percona/pmm-client/pmm/plugin/linux/metrics"
 	mongodbMetrics "github.com/percona/pmm-client/pmm/plugin/mongodb/metrics"
 	mongodbQueries "github.com/percona/pmm-client/pmm/plugin/mongodb/queries"
@@ -531,7 +533,7 @@ a new user 'pmm' automatically using the given (auto-detected) Redis credentials
 			}
 
 			redisMetrics := redisMetrics.New(flagRedis)
-			info, err := admin.AddMetrics(ctx, redisMetrics, false, flagDisableSSL)
+			info, err := admin.AddMetrics(ctx, redisMetrics, false, true)
 			if err == pmm.ErrDuplicate {
 				fmt.Println("[redis:metrics] OK, already monitoring Redis metrics.")
 			} else if err != nil {
@@ -552,12 +554,79 @@ a new user 'pmm' automatically using the given (auto-detected) Redis credentials
 		`,
 		Run: func(cmd *cobra.Command, args []string) {
 			redisMetrics := redisMetrics.New(flagRedis)
-			info, err := admin.AddMetrics(ctx, redisMetrics, false, flagDisableSSL)
+			info, err := admin.AddMetrics(ctx, redisMetrics, false, true)
 			if err != nil {
 				fmt.Println("Error adding redis metrics:", err)
 				os.Exit(1)
 			}
 			fmt.Println("OK, now monitoring Redis metrics using DSN", utils.SanitizeDSN(info.DSN))
+		},
+	}
+
+	cmdAddBlackbox = &cobra.Command{
+		Use:   "blackbox [flags] [name]",
+		Short: "Add complete monitoring for Blackbox instance (linux and blackbox metrics).",
+		Long: `This command adds the given Blackbox instance to system and metrics monitoring.
+
+When adding a Blackbox instance, this tool tries to auto-detect the DSN and credentials.
+If you want to create a new user to be used for metrics collecting, provide --create-user option. pmm-admin will create
+a new user 'pmm' automatically using the given (auto-detected) Blackbox credentials for granting purpose.
+
+[name] is an optional argument, by default it is set to the client name of this PMM client.
+		`,
+		Example: `  pmm-admin add blackbox 
+  pmm-admin add blackbox --blackbox.addr blackbox://127.0.0.1:6379 --blackbox.password 123456
+  pmm-admin add blackbox --blackbox.file /path/to/blackbox_6379.conf`,
+		Run: func(cmd *cobra.Command, args []string) {
+			// Passing additional arguments doesn't make sense because this command enables multiple exporters.
+			if len(admin.Args) > 0 {
+				fmt.Printf("We can't determine which exporter should receive additional flags: %s.\n", strings.Join(admin.Args, ", "))
+				fmt.Println("To pass additional arguments to specific exporter you need to add it separately e.g.:")
+				fmt.Println("pmm-admin add linux:metrics -- ", strings.Join(admin.Args, " "))
+				fmt.Println("or")
+				fmt.Println("pmm-admin add blackbox:metrics -- ", strings.Join(admin.Args, " "))
+				os.Exit(1)
+			}
+
+			linuxMetrics := linuxMetrics.New()
+			_, err := admin.AddMetrics(ctx, linuxMetrics, flagForce, flagDisableSSL)
+			if err == pmm.ErrDuplicate {
+				fmt.Println("[linux:metrics] OK, already monitoring this system.")
+			} else if err != nil {
+				fmt.Println("[linux:metrics] Error adding linux metrics:", err)
+				os.Exit(1)
+			} else {
+				fmt.Println("[linux:metrics] OK, now monitoring this system.")
+			}
+
+			blackboxMetrics := blackboxMetrics.New(blackbox.Flags{})
+			info, err := admin.AddMetrics(ctx, blackboxMetrics, false, true)
+			if err == pmm.ErrDuplicate {
+				fmt.Println("[blackbox:metrics] OK, already monitoring Blackbox metrics.")
+			} else if err != nil {
+				fmt.Println("[blackbox:metrics] Error adding Blackbox metrics:", err)
+				os.Exit(1)
+			} else {
+				fmt.Println("[blackbox:metrics] OK, now monitoring Blackbox metrics using DSN", utils.SanitizeDSN(info.DSN))
+			}
+		},
+	}
+	cmdAddBlackboxMetrics = &cobra.Command{
+		Use:   "blackbox:metrics [flags] [name] [-- [exporter_args]]",
+		Short: "Add Blackbox instance to metrics monitoring.",
+		Long: `This command adds the given Blackbox instance to metrics monitoring.
+
+[name] is an optional argument, by default it is set to the client name of this PMM client.
+[exporter_args] are the command line options to be passed directly to Prometheus Exporter.
+		`,
+		Run: func(cmd *cobra.Command, args []string) {
+			blackboxMetrics := blackboxMetrics.New(blackbox.Flags{})
+			info, err := admin.AddMetrics(ctx, blackboxMetrics, false, true)
+			if err != nil {
+				fmt.Println("Error adding blackbox metrics:", err)
+				os.Exit(1)
+			}
+			fmt.Println("OK, now monitoring Blackbox metrics using DSN", utils.SanitizeDSN(info.DSN))
 		},
 	}
 
@@ -1151,6 +1220,48 @@ An optional list of instances (scrape targets) can be provided.
 			fmt.Printf("OK, removed Redis metrics %s from monitoring.\n", admin.ServiceName)
 		},
 	}
+	cmdRemoveBlackbox = &cobra.Command{
+		Use:   "blackbox [flags] [name]",
+		Short: "Remove all monitoring for Blackbox (linux and blackbox metrics).",
+		Long: `This command removes all monitoring for Blackbox instance (linux and mysql metrics).
+
+[name] is an optional argument, by default it is set to the client name of this PMM client.
+		`,
+		Run: func(cmd *cobra.Command, args []string) {
+			err := admin.RemoveMetrics("linux")
+			if err == pmm.ErrNoService {
+				fmt.Printf("[linux:metrics] OK, no system %s under monitoring.\n", admin.ServiceName)
+			} else if err != nil {
+				fmt.Printf("[linux:metrics] Error removing linux metrics %s: %s\n", admin.ServiceName, err)
+			} else {
+				fmt.Printf("[linux:metrics] OK, removed system %s from monitoring.\n", admin.ServiceName)
+			}
+
+			err = admin.RemoveMetrics("blackbox")
+			if err == pmm.ErrNoService {
+				fmt.Printf("[blackbox:metrics] OK, no Blackbox metrics %s under monitoring.\n", admin.ServiceName)
+			} else if err != nil {
+				fmt.Printf("[blackbox:metrics] Error removing Blackbox metrics %s: %s\n", admin.ServiceName, err)
+			} else {
+				fmt.Printf("[blackbox:metrics] OK, removed Blackbox %s from monitoring.\n", admin.ServiceName)
+			}
+		},
+	}
+	cmdRemoveBlackboxMetrics = &cobra.Command{
+		Use:   "blackbox:metrics [flags] [name]",
+		Short: "Remove Blackbox instance from metrics monitoring.",
+		Long: `This command removes Blackbox instance from metrics monitoring.
+
+[name] is an optional argument, by default it is set to the client name of this PMM client.
+		`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := admin.RemoveMetrics("blackbox"); err != nil {
+				fmt.Printf("Error removing Blackbox metrics %s: %s\n", admin.ServiceName, err)
+				os.Exit(1)
+			}
+			fmt.Printf("OK, removed Blackbox metrics %s from monitoring.\n", admin.ServiceName)
+		},
+	}
 	cmdRemoveMongoDB = &cobra.Command{
 		Use:   "mongodb [flags] [name]",
 		Short: "Remove all monitoring for MongoDB instance (linux and mongodb metrics).",
@@ -1696,6 +1807,8 @@ func main() {
 		cmdAddOrchestratorMetrics,
 		cmdAddRedis,
 		cmdAddRedisMetrics,
+		cmdAddBlackbox,
+		cmdAddBlackboxMetrics,
 		cmdAddMongoDB,
 		cmdAddMongoDBMetrics,
 		cmdAddMongoDBQueries,
@@ -1716,6 +1829,8 @@ func main() {
 		cmdRemoveOrchestratorMetrics,
 		cmdRemoveRedis,
 		cmdRemoveRedisMetrics,
+		cmdRemoveBlackbox,
+		cmdRemoveBlackboxMetrics,
 		cmdRemoveMongoDB,
 		cmdRemoveMongoDBMetrics,
 		cmdRemoveMongoDBQueries,

@@ -387,6 +387,10 @@ func (a *Admin) RemoveAllMonitoring(ignoreErrors bool) (uint16, error) {
 				if err := a.RemoveMetrics("redis"); err != nil && !ignoreErrors {
 					return count, err
 				}
+			case "blackbox:metrics":
+				if err := a.RemoveMetrics("blackbox"); err != nil && !ignoreErrors {
+					return count, err
+				}
 			case "mysql:queries":
 				if err := a.RemoveQueries("mysql"); err != nil && !ignoreErrors {
 					return count, err
@@ -422,12 +426,12 @@ func (a *Admin) RemoveAllMonitoring(ignoreErrors bool) (uint16, error) {
 // PurgeMetrics purge metrics data on the server by its metric type and name.
 func (a *Admin) PurgeMetrics(svcType string) error {
 	switch svcType {
-	case "linux:metrics", "mysql:metrics", "orchestrator:metrics", "redis:metrics",
+	case "linux:metrics", "mysql:metrics", "orchestrator:metrics", "redis:metrics", "blackbox:metrics",
 		"mongodb:metrics", "proxysql:metrics", "postgresql:metrics":
 	default:
 		return errors.New(`bad service type.
 
-Service type takes the following values: linux:metrics, mysql:metrics, orchestrator:metrics, redis:metrics, mongodb:metrics, proxysql:metrics, postgresql:metrics.`)
+Service type takes the following values: linux:metrics, mysql:metrics, orchestrator:metrics, redis:metrics, blackbox:metrics, mongodb:metrics, proxysql:metrics, postgresql:metrics.`)
 	}
 
 	var promError error
@@ -790,6 +794,7 @@ func CheckBinaries() string {
 		fmt.Sprintf("%s/mysqld_exporter", PMMBaseDir),
 		fmt.Sprintf("%s/orchestrator_exporter", PMMBaseDir),
 		fmt.Sprintf("%s/redis_exporter", PMMBaseDir),
+		fmt.Sprintf("%s/blackbox_exporter", PMMBaseDir),
 		fmt.Sprintf("%s/mongodb_exporter", PMMBaseDir),
 		fmt.Sprintf("%s/proxysql_exporter", PMMBaseDir),
 		fmt.Sprintf("%s/postgres_exporter", PMMBaseDir),
@@ -871,6 +876,7 @@ var svcTypes = []string{
 	"mysql:queries",
 	"orchestrator:metrics",
 	"redis:metrics",
+	"blackbox:metrics",
 	"mongodb:metrics",
 	"mongodb:queries",
 	"proxysql:metrics",

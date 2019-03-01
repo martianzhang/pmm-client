@@ -1,6 +1,6 @@
 package redis
 
-// Flags are Orchestrator specific flags.
+// Flags are Redis specific flags.
 type Flags struct {
 	Addr                    string
 	File                    string
